@@ -86,63 +86,72 @@ def main(status_file, device_id):
 
     while True:
 
-        with open(status_file) as f:
-            data = json.load(f)
-            print(data)
-            flags = int(data["Flags"])
-
-            # Hardpoints, Cargo, Landing gear
-            # Deployed: 2, 205, 250 (blue)
-            # Undeployed: 250, 167, 2 (orange)
-
-            hardpt_status = flags & 0x00000040 
-            cargo_status = flags & 0x00000200 
-            landgear_status = flags & 0x00000004
-
-            print(f"Flags [{flags}] -> HP {hardpt_status }, Cargo {cargo_status}, LG {landgear_status}")
-
-
-            def deploy(k):
-                set_key_color(sdk, device_id, k, 2, 205, 250, 255)
-            def undeploy(k):
-                set_key_color(sdk, device_id, k, 250, 167, 2, 255)
-
-            deploy(ED_HPt_key)      if flags & 0x00000040 else undeploy(ED_HPt_key)
-            deploy(ED_Cargo_key)    if flags & 0x00000200 else undeploy(ED_Cargo_key)
-            deploy(ED_LandG_key)    if flags & 0x00000004 else undeploy(ED_LandG_key)
-
-            # Power distributor
-            sys_pips = int(data["Pips"][0])
-            eng_pips = int(data["Pips"][1])
-            wep_pips = int(data["Pips"][2])
-
-            print(f"Pips: SYS {sys_pips} ENG {eng_pips} WEP {wep_pips} ")
-
-            def get_power_rgb(pips):
-                if pips <= 2:
-                    return 255,255,255,255
-                else:
-                    return 255,0,0, int( (255/8) * pips ) 
-
-
-            def set_power_pips(k, r,g,b, opac):
-                set_key_color(sdk, device_id, k, r, g, b, opac)
-
-
-            set_power_pips(CorsairLedId_Keyboard.CLK_LeftArrow, *get_power_rgb(sys_pips))
-            set_power_pips(CorsairLedId_Keyboard.CLK_UpArrow, *get_power_rgb(eng_pips))
-            set_power_pips(CorsairLedId_Keyboard.CLK_RightArrow, *get_power_rgb(wep_pips))
- 
-            # HUD mode
-            analysis_mode = flags & 0x08000000
-            if (analysis_mode):
-                set_key_color(sdk, device_id, ED_Mode_key, 12, 209, 240, 255) # Discovery blue
-            else:
-                set_key_color(sdk, device_id, ED_Mode_key, 250, 167, 2, 255) # Hud orange
-
-
         sleep(1)
-    
+
+        with open(status_file) as f:
+
+            try:
+                data = json.load(f)
+
+                print(data)
+                flags = int(data["Flags"])
+
+                # Hardpoints, Cargo, Landing gear
+                # Deployed: 2, 205, 250 (blue)
+                # Undeployed: 250, 167, 2 (orange)
+
+                hardpt_status = flags & 0x00000040 
+                cargo_status = flags & 0x00000200 
+                landgear_status = flags & 0x00000004
+
+                print(f"Flags [{flags}] -> HP {hardpt_status }, Cargo {cargo_status}, LG {landgear_status}")
+
+
+                def deploy(k):
+                    set_key_color(sdk, device_id, k, 2, 205, 250, 255)
+                def undeploy(k):
+                    set_key_color(sdk, device_id, k, 250, 167, 2, 255)
+
+                deploy(ED_HPt_key)      if flags & 0x00000040 else undeploy(ED_HPt_key)
+                deploy(ED_Cargo_key)    if flags & 0x00000200 else undeploy(ED_Cargo_key)
+                deploy(ED_LandG_key)    if flags & 0x00000004 else undeploy(ED_LandG_key)
+
+                # Power distributor
+                sys_pips = int(data["Pips"][0])
+                eng_pips = int(data["Pips"][1])
+                wep_pips = int(data["Pips"][2])
+
+                print(f"Pips: SYS {sys_pips} ENG {eng_pips} WEP {wep_pips} ")
+
+                def get_power_rgb(pips):
+                    if pips <= 1: 
+                        return 255,255,255,0
+                    elif pips <= 4:
+                        return 255,255,255,255
+                    elif pips <= 6:
+                        return 250, 167,0,255
+                    else:
+                        return 255,0,0,255
+
+
+                def set_power_pips(k, r,g,b, opac):
+                    set_key_color(sdk, device_id, k, r, g, b, opac)
+
+
+                set_power_pips(CorsairLedId_Keyboard.CLK_LeftArrow, *get_power_rgb(sys_pips))
+                set_power_pips(CorsairLedId_Keyboard.CLK_UpArrow, *get_power_rgb(eng_pips))
+                set_power_pips(CorsairLedId_Keyboard.CLK_RightArrow, *get_power_rgb(wep_pips))
+ 
+                # HUD mode
+                analysis_mode = flags & 0x08000000
+                if (analysis_mode):
+                    set_key_color(sdk, device_id, ED_Mode_key, 12, 209, 240, 255) # Discovery blue
+                else:
+                    set_key_color(sdk, device_id, ED_Mode_key, 250, 167, 2, 255) # Hud orange
+
+            except Exception as e:
+                print(f"Error processing JSON file: {e}")    
+
 
 if __name__ == "__main__":
     print("\n***** Elite Dangerous active keyboard profile *****")
